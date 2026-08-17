@@ -876,10 +876,11 @@ function restoreBackupFromFile(file){
    ne part avant que l'utilisateur clique sur "Se connecter". */
 
 const DRIVE_FILE_NAME = 'suivi-cnu-sync.json';
+const DEFAULT_GOOGLE_CLIENT_ID = '509431495689-6rvvlebubqpeumfoj590f5us1bee01at.apps.googleusercontent.com';
 let gisTokenClient = null;
 let gisAccessToken = null;
 
-function getGoogleClientId(){ return (localStorage.getItem('cnu_google_client_id') || '').trim(); }
+function getGoogleClientId(){ return (localStorage.getItem('cnu_google_client_id') || DEFAULT_GOOGLE_CLIENT_ID).trim(); }
 function setGoogleClientId(v){ localStorage.setItem('cnu_google_client_id', v.trim()); }
 
 function loadGisScript(){
@@ -1044,12 +1045,12 @@ document.getElementById('content').innerHTML = `
       <button class="btn btn-gold" id="btnDriveSync">Synchroniser maintenant</button>
     </div>
     <details>
-      <summary style="cursor:pointer; font-size:12px; font-weight:600; color:var(--teal-700);">Configurer le Client ID Google (une seule fois)</summary>
+      <summary style="cursor:pointer; font-size:12px; font-weight:600; color:var(--teal-700);">Avancé : changer le Client ID Google (déjà configuré)</summary>
       <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px;">
         <input type="text" id="googleClientIdInput" placeholder="xxxx.apps.googleusercontent.com" style="flex:1; min-width:240px; padding:9px 12px; border-radius:9px; border:1px solid var(--line); font-family:var(--font-mono); font-size:12px;">
         <button class="btn btn-ghost btn-sm" id="btnSaveClientId">Enregistrer</button>
       </div>
-      <p style="font-size:11.5px; color:var(--muted); margin:8px 0 0;">Créé une seule fois dans Google Cloud Console pour ce site. Voir la procédure fournie séparément.</p>
+      <p style="font-size:11.5px; color:var(--muted); margin:8px 0 0;">Un identifiant est déjà configuré par défaut — rien à faire ici. Ne modifiez que si un administrateur vous fournit un autre Client ID.</p>
     </details>
   </div>
 
