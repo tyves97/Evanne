@@ -432,7 +432,19 @@ const SITUATIONS = [
 const TYPES_PIECES = ['Carte CNI','Carte CNU','Attestation d\u2019identité','Passeport','Carte consulaire','Extrait de naissance','Certificat de nationalité','Autre document','Aucun document'];
 
 const EQUIPES = ['Équipe 1','Équipe 2','Équipe 3'];
-const LOCALITES = ['Béréby','Tabou','Grabo'];
+const SOUS_PREFECTURES = ["DOBA", "DOGBO", "GABIADJI", "GRAND-BÉRÉBY", "SAN-PÉDRO"];
+const LOCALITES_PAR_SP = {
+  "DOBA": ["CENTRE USINE", "DAGADJI", "DAHORO", "DJAPADJI", "DOBA", "GAGNY", "GLIGBEUADJI", "GOH", "SAPH V1", "SAPH V2", "SAPH V3", "SAPH V4", "SAPH V5"],
+  "DOGBO": ["BLOHO", "BOUA", "DOGBO", "GLERE", "GNEPASSO", "MAGNERY", "MANA"],
+  "GABIADJI": ["BLAHOU", "BOIGNIKRO", "DO-SAKASSOU", "FAHE", "GABIADJI", "GBAPOUTOU", "GNANKE", "GNITY ECOLE", "GROBONOU-DAN", "MENE-CENTRE", "NABOVILLE", "NONOUAN", "SCAF", "SOUMAHORODOUGOU (ADAMADOUGOU)", "TOUIH"],
+  "GRAND-BÉRÉBY": ["ADJAMÉNÉ", "BACO 1", "BACO 2", "BACO 3", "BADIKÉ", "BATCHA", "BÉBÉ", "DAWA", "DJIHIMBO", "DJIKLA", "DOLÉ I", "DOLÉ II", "DOLÉ III", "DOSSO", "DOTOU", "GBORO", "GLIKÉ", "GLIKÉ V4", "GNAOULA", "GRAND-BÉRÉBY", "GRAND-DJORO", "GRAND-DJOUROU", "GRÉLÉON", "HANNIÉ", "HÉKÉ 1", "HÉKÉ 2", "HÉKÉ 3", "HÉKÉ-VILLAGE", "IBOKÉ", "IRATÉKÉ", "IRÉPOUÉ", "KABLAKÉ", "KAKO 1", "KAKO 2", "KAKO 3", "KAKO-VILLAGE", "KLANA", "KLOTOU", "KOTO 1", "KOTO 2", "KOTO 3", "MANI-BÉRÉBY", "MÉNOLÉ", "MÉNÉKÉ", "NANÉ", "NOUHOU YOUKOU", "NÉHONNIÉ 1", "NÉHONNIÉ 2", "NÉRO-BOUPÉ", "NÉRO-BROUSSE", "NÉRO-MER", "OUATÉKÉ", "OUESSÉKÉ", "OULIBIO", "OULIDIÉ", "OULISSO", "OURO", "OUÉLÉKÉ", "OUÉOULO", "PATAKÉ", "PETIT-NADO", "PITIKÉ", "PONT-NÉRO", "ROC-DOUGBALÉ", "ROC-OULIDIÉ", "SINGHÉ 1", "SINGHÉ 2", "SINGHÉ 3", "SOGB ZONE CENTRALE", "TAKORO", "TRAHÉ", "TÉKOULÉBO", "WATÉ", "YOUWASSO"],
+  "SAN-PÉDRO": ["BABA", "DIMOULE", "DJAHIO", "DJIRO-GNÉPAHIO", "DOULAYÉKO", "GORÉKÉ", "GRAND-GABO", "KABLAKÉ 1", "KABLAKÉ 2", "KOUNOUKO", "KPOTE", "KRÉMOUÉ", "MADIÉ", "MAGNÉ", "MAPRI 2", "MARIKRO", "MONOGAGA", "MOUSSADOUGOU", "PETIT-GABO", "PETIT-PÉDRO", "PODIO", "PONT-BASCULE", "PONT-BRIMÉ", "PONT-DIGBOUÉ", "POPOKO", "PORO", "SAN-PÉDRO", "TABOKÉ", "TAKI", "WATTÉ"],
+};
+const LOCALITES = Object.values(LOCALITES_PAR_SP).flat();
+function sousPrefectureDe(localite){
+  for(const sp of SOUS_PREFECTURES){ if(LOCALITES_PAR_SP[sp].includes(localite)) return sp; }
+  return '';
+}
 const AGENTS = ['KONATE Kady','TRAORE Aminata','KOFFI Yves','BAMBA Souleymane','ADJOBI Marie'];
 
 function todayISO(){ return new Date().toISOString().slice(0,10); }
@@ -448,6 +460,8 @@ function seedData(){
     const n = 4 + Math.floor(Math.random()*5);
     for(let i=0;i<n;i++){
       const date = new Date(Date.now() - d*86400000).toISOString().slice(0,10);
+      const seedSP = rand(SOUS_PREFECTURES);
+      const seedLocalite = rand(LOCALITES_PAR_SP[seedSP]);
       const situations = [];
       const r = Math.random();
       if(r < 0.6){ situations.push('ENR'); if(Math.random()<0.25) situations.push('CNU'); else if(Math.random()<0.3) situations.push('DA'); else if(Math.random()<0.25) situations.push('SND'); }
@@ -462,7 +476,7 @@ function seedData(){
         id: 'seed-'+(id++),
         nom: rand(noms), prenoms: rand(prenoms), sexe: Math.random()<0.5?'M':'F',
         telephone: '07'+Math.floor(10000000+Math.random()*89999999),
-        localite: rand(LOCALITES), equipe: rand(EQUIPES), agent: rand(AGENTS),
+        localite: seedLocalite, sousPrefecture: seedSP, equipe: rand(EQUIPES), agent: rand(AGENTS),
         date, typePiece: situations.includes('SND') ? 'Aucun document' : rand(TYPES_PIECES),
         numeroPiece: situations.includes('SND') ? '' : String(Math.floor(100000+Math.random()*900000)),
         situations, observation:''
@@ -532,6 +546,7 @@ function filterRows(rows, filters){
       const hay = (r.nom+' '+r.prenoms+' '+r.telephone).toLowerCase();
       if(!hay.includes(filters.q.toLowerCase())) return false;
     }
+    if(filters.sousPrefecture && r.sousPrefecture !== filters.sousPrefecture) return false;
     if(filters.localite && r.localite !== filters.localite) return false;
     if(filters.equipe && r.equipe !== filters.equipe) return false;
     if(filters.agent && r.agent !== filters.agent) return false;
@@ -690,7 +705,7 @@ function esc(str){
 document.getElementById('shell').innerHTML = renderShell('donnees.html', 'Données', 'Rechercher, vérifier et corriger les fiches enregistrées');
 afterShellMount();
 
-let filters = { q:'', localite:'', equipe:'', agent:'', typePiece:'', situation:'', period:'all' };
+let filters = { q:'', sousPrefecture:'', localite:'', equipe:'', agent:'', typePiece:'', situation:'', period:'all' };
 
 function optionsHtml(arr, current){
   return `<option value="">Tous</option>` + arr.map(v=>`<option ${v===current?'selected':''}>${v}</option>`).join('');
@@ -707,12 +722,15 @@ function draw(){
           <label>Recherche (nom, prénoms, téléphone)</label>
           <input type="text" id="fq" placeholder="KOUASSI…" value="${esc(filters.q)}">
         </div>
-        <div class="field"><label>Localité</label><select id="floc">${optionsHtml(LOCALITES, filters.localite)}</select></div>
-        <div class="field"><label>Équipe</label><select id="feq">${optionsHtml(EQUIPES, filters.equipe)}</select></div>
+        <div class="field"><label>Commune / Sous-préfecture</label><select id="fsp">${optionsHtml(SOUS_PREFECTURES, filters.sousPrefecture)}</select></div>
+        <div class="field"><label>Localité</label><select id="floc">${optionsHtml(filters.sousPrefecture ? LOCALITES_PAR_SP[filters.sousPrefecture] : LOCALITES, filters.localite)}</select></div>
       </div>
-      <div class="grid-3">
+      <div class="grid-3" style="margin-bottom:14px;">
+        <div class="field"><label>Équipe</label><select id="feq">${optionsHtml(EQUIPES, filters.equipe)}</select></div>
         <div class="field"><label>Agent</label><select id="fag">${optionsHtml(AGENTS, filters.agent)}</select></div>
         <div class="field"><label>Type de pièce</label><select id="ftp">${optionsHtml(TYPES_PIECES, filters.typePiece)}</select></div>
+      </div>
+      <div class="grid-3">
         <div class="field"><label>Situation</label>
           <select id="fsit">
             <option value="">Toutes</option>
@@ -743,7 +761,7 @@ function draw(){
         <table>
           <thead>
             <tr>
-              <th>Date</th><th>Nom</th><th>Prénoms</th><th>Localité</th><th>Équipe</th>
+              <th>Date</th><th>Nom</th><th>Prénoms</th><th>Commune</th><th>Localité</th><th>Équipe</th>
               <th>Pièce</th><th>Situations</th><th>Agent</th><th></th>
             </tr>
           </thead>
@@ -753,6 +771,7 @@ function draw(){
                 <td style="font-family:var(--font-mono); font-size:12px;">${r.date}</td>
                 <td><strong>${esc(r.nom)}</strong></td>
                 <td>${esc(r.prenoms)}</td>
+                <td>${esc(r.sousPrefecture||'—')}</td>
                 <td>${esc(r.localite)}</td>
                 <td>${esc(r.equipe)}</td>
                 <td>${esc(r.typePiece)}</td>
@@ -765,14 +784,18 @@ function draw(){
       </div>`}
   `;
 
-  ['fq','floc','feq','fag','ftp','fsit'].forEach(id=>{
+  ['fq','fsp','floc','feq','fag','ftp','fsit'].forEach(id=>{
     const el = document.getElementById(id);
-    const key = {fq:'q',floc:'localite',feq:'equipe',fag:'agent',ftp:'typePiece',fsit:'situation'}[id];
+    const key = {fq:'q',fsp:'sousPrefecture',floc:'localite',feq:'equipe',fag:'agent',ftp:'typePiece',fsit:'situation'}[id];
     const ev = id==='fq' ? 'input' : 'change';
-    el.addEventListener(ev, ()=>{ filters[key] = el.value; draw(); });
+    el.addEventListener(ev, ()=>{
+      filters[key] = el.value;
+      if(key==='sousPrefecture') filters.localite = ''; // la sous-préfecture change la liste des localités
+      draw();
+    });
   });
   document.querySelectorAll('.pill').forEach(p=>p.addEventListener('click', ()=>{ filters.period = p.dataset.p; draw(); }));
-  document.getElementById('clearBtn').addEventListener('click', ()=>{ filters = { q:'', localite:'', equipe:'', agent:'', typePiece:'', situation:'', period:'all' }; draw(); });
+  document.getElementById('clearBtn').addEventListener('click', ()=>{ filters = { q:'', sousPrefecture:'', localite:'', equipe:'', agent:'', typePiece:'', situation:'', period:'all' }; draw(); });
   document.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', ()=>{
     if(confirm('Supprimer cette fiche ?')){ deletePersonne(b.dataset.del); showToast('Fiche supprimée'); draw(); }
   }));
