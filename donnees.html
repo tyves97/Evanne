@@ -429,7 +429,7 @@ const SITUATIONS = [
   { code:'VUL', label:'Vulnérable',          cls:'badge-warn'   },
 ];
 
-const TYPES_PIECES = ['Carte CNI','Carte CNU','Attestation d\u2019identité','Passeport','Carte consulaire','Extrait de naissance','Certificat de nationalité','Autre document','Aucun document'];
+const TYPES_PIECES = ['Carte CNI','Carte CMU','Attestation d\u2019identité','Passeport','Carte consulaire','Extrait de naissance','Certificat de nationalité','Autre document','Aucun document'];
 
 const EQUIPES = ['Équipe 1','Équipe 2','Équipe 3'];
 const SOUS_PREFECTURES = ["DOBA", "DOGBO", "GABIADJI", "GRAND-BÉRÉBY", "SAN-PÉDRO"];
@@ -445,7 +445,7 @@ function sousPrefectureDe(localite){
   for(const sp of SOUS_PREFECTURES){ if(LOCALITES_PAR_SP[sp].includes(localite)) return sp; }
   return '';
 }
-const AGENTS = ['KONATE Kady','TRAORE Aminata','KOFFI Yves','BAMBA Souleymane','ADJOBI Marie'];
+const AGENTS = ['KONATE Kady Evanne','YAPO Doris'];
 
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 
