@@ -986,11 +986,15 @@ async function driveSyncNow(){
     updateSyncUI();
     renderPreview();
   }catch(err){
-    if(err.message === 'no-client-id'){
-      showToast('Renseignez d\u2019abord le Client ID Google ci-dessous');
+    // Drive indisponible (pas configuré, hors-ligne, refus, app non hébergée) :
+    // on bascule automatiquement sur la solution sans hébergement.
+    console.error('Drive sync failed, falling back to native share:', err);
+    if(err && err.message === 'no-client-id'){
+      showToast('Drive non configuré — utilisation de la sauvegarde par partage');
     }else{
-      showToast('Synchronisation impossible — connexion ou compte à vérifier');
+      showToast('Drive indisponible — bascule sur le partage local');
     }
+    await shareBackup();
   }
 }
 
@@ -1030,8 +1034,10 @@ document.getElementById('content').innerHTML = `
       <span class="hint" id="syncStatus">Non connecté à Google Drive</span>
     </div>
     <p style="font-size:12.5px; color:var(--muted); margin:0 0 14px; max-width:640px;">
-      Une fois connecté, chaque synchronisation fusionne les fiches de cet appareil avec celles déjà présentes
-      sur Drive (aucune fiche n'est écrasée), puis renvoie le tout dans un fichier privé de votre Drive.
+      Chaque agent se connecte avec <strong>son propre compte Google</strong> : la synchronisation lit et écrit
+      uniquement dans son Drive personnel (jamais celui d'un autre agent). Si Drive n'est pas configuré, hors
+      ligne, ou si l'app n'est pas encore hébergée, le bouton <strong>Synchroniser</strong> bascule automatiquement
+      sur le partage local ci-dessous.
     </p>
     <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
       <button class="btn btn-primary" id="btnDriveConnect">Se connecter à Google Drive</button>
