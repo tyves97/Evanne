@@ -440,7 +440,19 @@ const SITUATIONS = [
 const TYPES_PIECES = ['Carte CNI','Carte CNU','Attestation d\u2019identité','Passeport','Carte consulaire','Extrait de naissance','Certificat de nationalité','Autre document','Aucun document'];
 
 const EQUIPES = ['Équipe 1','Équipe 2','Équipe 3'];
-const LOCALITES = ['Béréby','Tabou','Grabo'];
+const SOUS_PREFECTURES = ["DOBA", "DOGBO", "GABIADJI", "GRAND-BÉRÉBY", "SAN-PÉDRO"];
+const LOCALITES_PAR_SP = {
+  "DOBA": ["CENTRE USINE", "DAGADJI", "DAHORO", "DJAPADJI", "DOBA", "GAGNY", "GLIGBEUADJI", "GOH", "SAPH V1", "SAPH V2", "SAPH V3", "SAPH V4", "SAPH V5"],
+  "DOGBO": ["BLOHO", "BOUA", "DOGBO", "GLERE", "GNEPASSO", "MAGNERY", "MANA"],
+  "GABIADJI": ["BLAHOU", "BOIGNIKRO", "DO-SAKASSOU", "FAHE", "GABIADJI", "GBAPOUTOU", "GNANKE", "GNITY ECOLE", "GROBONOU-DAN", "MENE-CENTRE", "NABOVILLE", "NONOUAN", "SCAF", "SOUMAHORODOUGOU (ADAMADOUGOU)", "TOUIH"],
+  "GRAND-BÉRÉBY": ["ADJAMÉNÉ", "BACO 1", "BACO 2", "BACO 3", "BADIKÉ", "BATCHA", "BÉBÉ", "DAWA", "DJIHIMBO", "DJIKLA", "DOLÉ I", "DOLÉ II", "DOLÉ III", "DOSSO", "DOTOU", "GBORO", "GLIKÉ", "GLIKÉ V4", "GNAOULA", "GRAND-BÉRÉBY", "GRAND-DJORO", "GRAND-DJOUROU", "GRÉLÉON", "HANNIÉ", "HÉKÉ 1", "HÉKÉ 2", "HÉKÉ 3", "HÉKÉ-VILLAGE", "IBOKÉ", "IRATÉKÉ", "IRÉPOUÉ", "KABLAKÉ", "KAKO 1", "KAKO 2", "KAKO 3", "KAKO-VILLAGE", "KLANA", "KLOTOU", "KOTO 1", "KOTO 2", "KOTO 3", "MANI-BÉRÉBY", "MÉNOLÉ", "MÉNÉKÉ", "NANÉ", "NOUHOU YOUKOU", "NÉHONNIÉ 1", "NÉHONNIÉ 2", "NÉRO-BOUPÉ", "NÉRO-BROUSSE", "NÉRO-MER", "OUATÉKÉ", "OUESSÉKÉ", "OULIBIO", "OULIDIÉ", "OULISSO", "OURO", "OUÉLÉKÉ", "OUÉOULO", "PATAKÉ", "PETIT-NADO", "PITIKÉ", "PONT-NÉRO", "ROC-DOUGBALÉ", "ROC-OULIDIÉ", "SINGHÉ 1", "SINGHÉ 2", "SINGHÉ 3", "SOGB ZONE CENTRALE", "TAKORO", "TRAHÉ", "TÉKOULÉBO", "WATÉ", "YOUWASSO"],
+  "SAN-PÉDRO": ["BABA", "DIMOULE", "DJAHIO", "DJIRO-GNÉPAHIO", "DOULAYÉKO", "GORÉKÉ", "GRAND-GABO", "KABLAKÉ 1", "KABLAKÉ 2", "KOUNOUKO", "KPOTE", "KRÉMOUÉ", "MADIÉ", "MAGNÉ", "MAPRI 2", "MARIKRO", "MONOGAGA", "MOUSSADOUGOU", "PETIT-GABO", "PETIT-PÉDRO", "PODIO", "PONT-BASCULE", "PONT-BRIMÉ", "PONT-DIGBOUÉ", "POPOKO", "PORO", "SAN-PÉDRO", "TABOKÉ", "TAKI", "WATTÉ"],
+};
+const LOCALITES = Object.values(LOCALITES_PAR_SP).flat();
+function sousPrefectureDe(localite){
+  for(const sp of SOUS_PREFECTURES){ if(LOCALITES_PAR_SP[sp].includes(localite)) return sp; }
+  return '';
+}
 const AGENTS = ['KONATE Kady','TRAORE Aminata','KOFFI Yves','BAMBA Souleymane','ADJOBI Marie'];
 
 function todayISO(){ return new Date().toISOString().slice(0,10); }
@@ -456,6 +468,8 @@ function seedData(){
     const n = 4 + Math.floor(Math.random()*5);
     for(let i=0;i<n;i++){
       const date = new Date(Date.now() - d*86400000).toISOString().slice(0,10);
+      const seedSP = rand(SOUS_PREFECTURES);
+      const seedLocalite = rand(LOCALITES_PAR_SP[seedSP]);
       const situations = [];
       const r = Math.random();
       if(r < 0.6){ situations.push('ENR'); if(Math.random()<0.25) situations.push('CNU'); else if(Math.random()<0.3) situations.push('DA'); else if(Math.random()<0.25) situations.push('SND'); }
@@ -470,7 +484,7 @@ function seedData(){
         id: 'seed-'+(id++),
         nom: rand(noms), prenoms: rand(prenoms), sexe: Math.random()<0.5?'M':'F',
         telephone: '07'+Math.floor(10000000+Math.random()*89999999),
-        localite: rand(LOCALITES), equipe: rand(EQUIPES), agent: rand(AGENTS),
+        localite: seedLocalite, sousPrefecture: seedSP, equipe: rand(EQUIPES), agent: rand(AGENTS),
         date, typePiece: situations.includes('SND') ? 'Aucun document' : rand(TYPES_PIECES),
         numeroPiece: situations.includes('SND') ? '' : String(Math.floor(100000+Math.random()*900000)),
         situations, observation:''
@@ -540,6 +554,7 @@ function filterRows(rows, filters){
       const hay = (r.nom+' '+r.prenoms+' '+r.telephone).toLowerCase();
       if(!hay.includes(filters.q.toLowerCase())) return false;
     }
+    if(filters.sousPrefecture && r.sousPrefecture !== filters.sousPrefecture) return false;
     if(filters.localite && r.localite !== filters.localite) return false;
     if(filters.equipe && r.equipe !== filters.equipe) return false;
     if(filters.agent && r.agent !== filters.agent) return false;
@@ -702,7 +717,7 @@ const REPORTS = [
   {id:'jour',  ic:'&#9673;', name:'Journalier', desc:'Bilan du jour, par équipe et localité'},
   {id:'semaine', ic:'&#8635;', name:'Hebdomadaire', desc:'Lundi \u2192 dimanche en cours'},
   {id:'mois', ic:'&#9776;', name:'Mensuel', desc:'Cumul du mois en cours'},
-  {id:'localite', ic:'&#9737;', name:'Par localité', desc:'Comparatif Béréby / Tabou / Grabo'},
+  {id:'localite', ic:'&#9737;', name:'Par commune', desc:'Comparatif des 5 communes / sous-préfectures'},
   {id:'equipe', ic:'&#9670;', name:'Par équipe', desc:'Performance de chaque équipe'},
   {id:'piece', ic:'&#9635;', name:'Par type de pièce', desc:'Répartition CNI / CNU / autres'},
 ];
@@ -746,11 +761,11 @@ function renderPreview(){
         </tbody>
       </table>`;
   } else if(selected==='localite'){
-    title = 'Bilan par localité';
-    const data = LOCALITES.map(loc=>({loc, ...computeStats(rows.filter(r=>r.localite===loc))}));
+    title = 'Bilan par commune / sous-préfecture';
+    const data = SOUS_PREFECTURES.map(sp=>({loc: sp, ...computeStats(rows.filter(r=>r.sousPrefecture===sp))}));
     table = `
       <table>
-        <thead><tr><th>Localité</th><th>Collectées</th><th>Enrôlées</th><th>CNU</th><th>Sans doc.</th><th>Déplacées</th><th>Introuvables</th></tr></thead>
+        <thead><tr><th>Commune / Sous-préfecture</th><th>Collectées</th><th>Enrôlées</th><th>CNU</th><th>Sans doc.</th><th>Déplacées</th><th>Introuvables</th></tr></thead>
         <tbody>${data.map(l=>`<tr><td><strong>${l.loc}</strong></td><td>${l.total}</td><td>${l.ENR}</td><td>${l.CNU}</td><td>${l.SND}</td><td>${l.PD}</td><td>${l.PI}</td></tr>`).join('')}
         <tr style="font-weight:700; background:var(--teal-100);"><td>Total</td><td>${rows.length}</td><td>${s.ENR}</td><td>${s.CNU}</td><td>${s.SND}</td><td>${s.PD}</td><td>${s.PI}</td></tr>
         </tbody>
@@ -788,7 +803,7 @@ function exportExcel(){
   const rows = buildRows();
   const data = rows.map(r=>({
     Date:r.date, Nom:r.nom, Prenoms:r.prenoms, Sexe:r.sexe, Telephone:r.telephone,
-    Localite:r.localite, Equipe:r.equipe, Agent:r.agent, TypePiece:r.typePiece,
+    Commune:r.sousPrefecture||'', Localite:r.localite, Equipe:r.equipe, Agent:r.agent, TypePiece:r.typePiece,
     NumeroPiece:r.numeroPiece||'', Situations:r.situations.join('/'), Observation:r.observation||''
   }));
   const ws = XLSX.utils.json_to_sheet(data);

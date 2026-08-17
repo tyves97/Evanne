@@ -474,7 +474,19 @@ const SITUATIONS = [
 const TYPES_PIECES = ['Carte CNI','Carte CNU','Attestation d\u2019identité','Passeport','Carte consulaire','Extrait de naissance','Certificat de nationalité','Autre document','Aucun document'];
 
 const EQUIPES = ['Équipe 1','Équipe 2','Équipe 3'];
-const LOCALITES = ['Béréby','Tabou','Grabo'];
+const SOUS_PREFECTURES = ["DOBA", "DOGBO", "GABIADJI", "GRAND-BÉRÉBY", "SAN-PÉDRO"];
+const LOCALITES_PAR_SP = {
+  "DOBA": ["CENTRE USINE", "DAGADJI", "DAHORO", "DJAPADJI", "DOBA", "GAGNY", "GLIGBEUADJI", "GOH", "SAPH V1", "SAPH V2", "SAPH V3", "SAPH V4", "SAPH V5"],
+  "DOGBO": ["BLOHO", "BOUA", "DOGBO", "GLERE", "GNEPASSO", "MAGNERY", "MANA"],
+  "GABIADJI": ["BLAHOU", "BOIGNIKRO", "DO-SAKASSOU", "FAHE", "GABIADJI", "GBAPOUTOU", "GNANKE", "GNITY ECOLE", "GROBONOU-DAN", "MENE-CENTRE", "NABOVILLE", "NONOUAN", "SCAF", "SOUMAHORODOUGOU (ADAMADOUGOU)", "TOUIH"],
+  "GRAND-BÉRÉBY": ["ADJAMÉNÉ", "BACO 1", "BACO 2", "BACO 3", "BADIKÉ", "BATCHA", "BÉBÉ", "DAWA", "DJIHIMBO", "DJIKLA", "DOLÉ I", "DOLÉ II", "DOLÉ III", "DOSSO", "DOTOU", "GBORO", "GLIKÉ", "GLIKÉ V4", "GNAOULA", "GRAND-BÉRÉBY", "GRAND-DJORO", "GRAND-DJOUROU", "GRÉLÉON", "HANNIÉ", "HÉKÉ 1", "HÉKÉ 2", "HÉKÉ 3", "HÉKÉ-VILLAGE", "IBOKÉ", "IRATÉKÉ", "IRÉPOUÉ", "KABLAKÉ", "KAKO 1", "KAKO 2", "KAKO 3", "KAKO-VILLAGE", "KLANA", "KLOTOU", "KOTO 1", "KOTO 2", "KOTO 3", "MANI-BÉRÉBY", "MÉNOLÉ", "MÉNÉKÉ", "NANÉ", "NOUHOU YOUKOU", "NÉHONNIÉ 1", "NÉHONNIÉ 2", "NÉRO-BOUPÉ", "NÉRO-BROUSSE", "NÉRO-MER", "OUATÉKÉ", "OUESSÉKÉ", "OULIBIO", "OULIDIÉ", "OULISSO", "OURO", "OUÉLÉKÉ", "OUÉOULO", "PATAKÉ", "PETIT-NADO", "PITIKÉ", "PONT-NÉRO", "ROC-DOUGBALÉ", "ROC-OULIDIÉ", "SINGHÉ 1", "SINGHÉ 2", "SINGHÉ 3", "SOGB ZONE CENTRALE", "TAKORO", "TRAHÉ", "TÉKOULÉBO", "WATÉ", "YOUWASSO"],
+  "SAN-PÉDRO": ["BABA", "DIMOULE", "DJAHIO", "DJIRO-GNÉPAHIO", "DOULAYÉKO", "GORÉKÉ", "GRAND-GABO", "KABLAKÉ 1", "KABLAKÉ 2", "KOUNOUKO", "KPOTE", "KRÉMOUÉ", "MADIÉ", "MAGNÉ", "MAPRI 2", "MARIKRO", "MONOGAGA", "MOUSSADOUGOU", "PETIT-GABO", "PETIT-PÉDRO", "PODIO", "PONT-BASCULE", "PONT-BRIMÉ", "PONT-DIGBOUÉ", "POPOKO", "PORO", "SAN-PÉDRO", "TABOKÉ", "TAKI", "WATTÉ"],
+};
+const LOCALITES = Object.values(LOCALITES_PAR_SP).flat();
+function sousPrefectureDe(localite){
+  for(const sp of SOUS_PREFECTURES){ if(LOCALITES_PAR_SP[sp].includes(localite)) return sp; }
+  return '';
+}
 const AGENTS = ['KONATE Kady','TRAORE Aminata','KOFFI Yves','BAMBA Souleymane','ADJOBI Marie'];
 
 function todayISO(){ return new Date().toISOString().slice(0,10); }
@@ -490,6 +502,8 @@ function seedData(){
     const n = 4 + Math.floor(Math.random()*5);
     for(let i=0;i<n;i++){
       const date = new Date(Date.now() - d*86400000).toISOString().slice(0,10);
+      const seedSP = rand(SOUS_PREFECTURES);
+      const seedLocalite = rand(LOCALITES_PAR_SP[seedSP]);
       const situations = [];
       const r = Math.random();
       if(r < 0.6){ situations.push('ENR'); if(Math.random()<0.25) situations.push('CNU'); else if(Math.random()<0.3) situations.push('DA'); else if(Math.random()<0.25) situations.push('SND'); }
@@ -504,7 +518,7 @@ function seedData(){
         id: 'seed-'+(id++),
         nom: rand(noms), prenoms: rand(prenoms), sexe: Math.random()<0.5?'M':'F',
         telephone: '07'+Math.floor(10000000+Math.random()*89999999),
-        localite: rand(LOCALITES), equipe: rand(EQUIPES), agent: rand(AGENTS),
+        localite: seedLocalite, sousPrefecture: seedSP, equipe: rand(EQUIPES), agent: rand(AGENTS),
         date, typePiece: situations.includes('SND') ? 'Aucun document' : rand(TYPES_PIECES),
         numeroPiece: situations.includes('SND') ? '' : String(Math.floor(100000+Math.random()*900000)),
         situations, observation:''
@@ -574,6 +588,7 @@ function filterRows(rows, filters){
       const hay = (r.nom+' '+r.prenoms+' '+r.telephone).toLowerCase();
       if(!hay.includes(filters.q.toLowerCase())) return false;
     }
+    if(filters.sousPrefecture && r.sousPrefecture !== filters.sousPrefecture) return false;
     if(filters.localite && r.localite !== filters.localite) return false;
     if(filters.equipe && r.equipe !== filters.equipe) return false;
     if(filters.agent && r.agent !== filters.agent) return false;
@@ -748,14 +763,17 @@ document.getElementById('content').innerHTML = `
         <div class="field"><label>Équipe</label>
           <select name="equipe">${EQUIPES.map(e=>`<option>${e}</option>`).join('')}</select>
         </div>
-        <div class="field"><label>Localité</label>
-          <select name="localite">${LOCALITES.map(l=>`<option>${l}</option>`).join('')}</select>
+        <div class="field"><label>Commune / Sous-préfecture</label>
+          <select name="sousPrefecture" id="spSelect">${SOUS_PREFECTURES.map(sp=>`<option>${sp}</option>`).join('')}</select>
         </div>
         <div class="field"><label>Agent</label>
           <select name="agent">${AGENTS.map(a=>`<option>${a}</option>`).join('')}</select>
         </div>
       </div>
       <div class="grid-3">
+        <div class="field"><label>Localité</label>
+          <select name="localite" id="localiteSelect"></select>
+        </div>
         <div class="field"><label>Date</label>
           <input type="date" name="date" value="${todayISO()}">
         </div>
@@ -830,13 +848,23 @@ document.getElementById('content').innerHTML = `
 </div>
 `;
 
+function populateLocalites(){
+  const spSelect = document.getElementById('spSelect');
+  const localiteSelect = document.getElementById('localiteSelect');
+  const sp = spSelect.value;
+  const locs = LOCALITES_PAR_SP[sp] || [];
+  localiteSelect.innerHTML = locs.map(l=>`<option>${l}</option>`).join('');
+}
+document.getElementById('spSelect').addEventListener('change', ()=>{ populateLocalites(); updatePreview(); });
+populateLocalites();
+
 function updatePreview(){
   const form = document.getElementById('ficheForm');
   const fd = new FormData(form);
   const nom = (fd.get('nom')||'').toUpperCase() || '—';
   const prenoms = fd.get('prenoms') || '—';
   document.getElementById('pvNomPrenoms').textContent = nom+' '+prenoms;
-  document.getElementById('pvLocaliteEquipe').textContent = (fd.get('localite')||'—')+' — '+(fd.get('equipe')||'—');
+  document.getElementById('pvLocaliteEquipe').textContent = (fd.get('localite')||'—')+' ('+(fd.get('sousPrefecture')||'—')+') — '+(fd.get('equipe')||'—');
   document.getElementById('pvSexe').textContent = fd.get('sexe')==='F' ? 'Femme' : 'Homme';
   document.getElementById('pvPiece').textContent = fd.get('typePiece')||'—';
   document.getElementById('pvNumero').textContent = fd.get('numeroPiece') || '—';
@@ -858,7 +886,7 @@ document.getElementById('ficheForm').addEventListener('submit', (e)=>{
     return;
   }
   const entry = {
-    equipe: fd.get('equipe'), localite: fd.get('localite'), agent: fd.get('agent'),
+    equipe: fd.get('equipe'), sousPrefecture: fd.get('sousPrefecture'), localite: fd.get('localite'), agent: fd.get('agent'),
     date: fd.get('date') || todayISO(),
     nom: fd.get('nom').toUpperCase(), prenoms: fd.get('prenoms'), sexe: fd.get('sexe'),
     telephone: fd.get('telephone'),
@@ -870,9 +898,10 @@ document.getElementById('ficheForm').addEventListener('submit', (e)=>{
   showToast('Fiche enregistrée — '+entry.nom+' '+entry.prenoms);
   e.target.reset();
   e.target.querySelector('input[name=date]').value = todayISO();
+  populateLocalites();
   updatePreview();
 });
-document.getElementById('ficheForm').addEventListener('reset', ()=>setTimeout(updatePreview));
+document.getElementById('ficheForm').addEventListener('reset', ()=>setTimeout(()=>{ populateLocalites(); updatePreview(); }));
 </script>
 </body>
 </html>
